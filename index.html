@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Life OS</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0e0f11;--bg2:#16181c;--bg3:#1e2026;
+  --bd:rgba(255,255,255,0.07);--bdb:rgba(255,255,255,0.13);
+  --tx:#e8e9eb;--tx2:#8a8f9a;--tx3:#4a5060;
+  --gr:#4ade80;--gr-d:rgba(74,222,128,0.1);
+  --am:#fbbf24;--am-d:rgba(251,191,36,0.1);
+  --bl:#60a5fa;--bl-d:rgba(96,165,250,0.1);
+  --pu:#c084fc;--pu-d:rgba(192,132,252,0.1);
+  --re:#f87171;--re-d:rgba(248,113,113,0.1);
+  --mono:'DM Mono',monospace;--sans:'DM Sans',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--tx);font-family:var(--sans);font-size:14px;line-height:1.5;}
+.app{display:flex;height:100vh;overflow:hidden;}
+
+/* Sidebar */
+.sb{width:200px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--bd);display:flex;flex-direction:column;padding:18px 0;}
+.logo{padding:0 16px 16px;border-bottom:1px solid var(--bd);margin-bottom:8px;}
+.logo-t{font-family:var(--mono);font-size:10px;letter-spacing:.18em;color:var(--gr);text-transform:uppercase;}
+.logo-s{font-size:11px;color:var(--tx3);margin-top:2px;}
+.ni{display:flex;align-items:center;gap:9px;padding:8px 16px;cursor:pointer;color:var(--tx2);font-size:13px;border-left:2px solid transparent;transition:all .12s;user-select:none;}
+.ni:hover{color:var(--tx);background:var(--bg3);}
+.ni.on{color:var(--gr);border-left-color:var(--gr);background:rgba(74,222,128,0.04);}
+.ns{font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--tx3);text-transform:uppercase;padding:12px 16px 4px;}
+.sb-ft{margin-top:auto;padding:12px 16px 0;border-top:1px solid var(--bd);}
+.week-box{background:var(--bg3);border:0.5px solid var(--bd);border-radius:7px;padding:9px 11px;}
+.week-label{font-family:var(--mono);font-size:9px;color:var(--tx3);letter-spacing:.08em;margin-bottom:4px;}
+.week-bar-row{display:flex;align-items:center;gap:6px;margin-bottom:3px;}
+.week-bar-label{font-size:10px;color:var(--tx2);width:56px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.week-mini-bar{flex:1;height:3px;background:var(--bg);border-radius:2px;overflow:hidden;}
+.week-mini-fill{height:100%;border-radius:2px;transition:width .3s;}
+
+/* Main */
+.main{flex:1;overflow-y:auto;padding:28px 30px;}
+.panel{display:none;}.panel.on{display:block;}
+
+/* Page */
+.ph{margin-bottom:22px;}
+.pt{font-size:20px;font-weight:500;letter-spacing:-.02em;}
+.ps{font-size:12px;color:var(--tx2);margin-top:3px;}
+
+/* Cards */
+.card{background:var(--bg2);border:0.5px solid var(--bd);border-radius:10px;padding:18px;margin-bottom:12px;}
+.ct{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:12px;}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:7px;font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .12s;}
+.bp{background:var(--gr);color:#061506;}.bp:hover{background:#6ee7a0;}.bp:disabled{opacity:.35;cursor:not-allowed;}
+.bg{background:transparent;color:var(--tx2);border:0.5px solid var(--bd);}.bg:hover{color:var(--tx);border-color:var(--bdb);}
+.bd-btn{background:transparent;color:var(--tx3);border:0.5px solid var(--bd);font-size:12px;padding:5px 10px;}.bd-btn:hover{color:var(--re);border-color:var(--re-d);}
+
+/* Forms */
+.fg{margin-bottom:12px;}
+.fl{display:block;font-size:11px;color:var(--tx2);margin-bottom:4px;font-weight:500;}
+.fi,.ft,.fs{width:100%;background:var(--bg3);border:0.5px solid var(--bd);border-radius:6px;color:var(--tx);font-family:var(--sans);font-size:13px;padding:7px 10px;outline:none;transition:border-color .12s;-webkit-appearance:none;}
+.fi:focus,.ft:focus,.fs:focus{border-color:var(--bdb);}
+.ft{resize:vertical;min-height:70px;line-height:1.6;}
+.fr2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+/* Today allocation rows */
+.alloc-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--bd);}
+.alloc-row:last-child{border-bottom:none;padding-bottom:0;}
+.alloc-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.alloc-name{flex:1;font-size:13px;}
+.alloc-time{font-family:var(--mono);font-size:12px;color:var(--tx2);width:52px;text-align:right;flex-shrink:0;}
+.alloc-bar-wrap{width:80px;height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;flex-shrink:0;}
+.alloc-bar{height:100%;border-radius:2px;transition:width .3s;}
+
+/* Log button inline */
+.log-row{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:0.5px solid var(--bd);}
+.log-row:last-child{border-bottom:none;}
+.log-name{flex:1;font-size:13px;}
+.log-done{font-family:var(--mono);font-size:11px;color:var(--tx3);}
+.log-input{width:70px;background:var(--bg3);border:0.5px solid var(--bd);border-radius:5px;color:var(--tx);font-family:var(--mono);font-size:12px;padding:4px 7px;outline:none;text-align:center;}
+.log-input:focus{border-color:var(--bdb);}
+.log-unit{font-size:11px;color:var(--tx3);}
+
+/* Weekly progress */
+.wk-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--bd);}
+.wk-row:last-child{border-bottom:none;}
+.wk-name{font-size:13px;width:160px;flex-shrink:0;}
+.wk-bar-wrap{flex:1;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden;}
+.wk-bar{height:100%;border-radius:3px;transition:width .3s;}
+.wk-val{font-family:var(--mono);font-size:11px;color:var(--tx2);width:72px;text-align:right;flex-shrink:0;}
+.wk-pct{font-family:var(--mono);font-size:10px;color:var(--tx3);width:34px;text-align:right;flex-shrink:0;}
+
+/* AI output */
+.ai-out{background:var(--bg3);border:0.5px solid var(--bd);border-radius:8px;padding:16px;font-size:13px;line-height:1.8;white-space:pre-wrap;min-height:60px;color:var(--tx);}
+.ai-out.ld{color:var(--tx3);font-style:italic;}
+
+/* Stats row */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;}
+.stat{background:var(--bg2);border:0.5px solid var(--bd);border-radius:9px;padding:13px 14px;}
+.stat-n{font-family:var(--mono);font-size:22px;font-weight:300;}
+.stat-l{font-size:10px;color:var(--tx3);margin-top:2px;text-transform:uppercase;letter-spacing:.05em;}
+
+.fb{display:flex;justify-content:space-between;align-items:center;}
+.mt10{margin-top:10px;}.mb0{margin-bottom:0!important;}
+.empty{text-align:center;padding:24px;color:var(--tx3);font-size:13px;}
+.divider{border:none;border-top:0.5px solid var(--bd);margin:12px 0;}
+.tag{display:inline-flex;padding:2px 8px;border-radius:20px;font-size:10px;font-family:var(--mono);}
+.tg{background:var(--gr-d);color:var(--gr);}
+.ta{background:var(--am-d);color:var(--am);}
+.tb{background:var(--bl-d);color:var(--bl);}
+.tp{background:var(--pu-d);color:var(--pu);}
+.tr{background:var(--re-d);color:var(--re);}
+
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--bdb);border-radius:3px;}
+@keyframes fu{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.panel.on .card{animation:fu .15s ease both;}
+.panel.on .card:nth-child(2){animation-delay:.03s;}
+.panel.on .card:nth-child(3){animation-delay:.06s;}
+.panel.on .card:nth-child(4){animation-delay:.09s;}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- Sidebar -->
+<div class="sb">
+  <div class="logo">
+    <div class="logo-t">Life OS</div>
+    <div class="logo-s">Tom's Manager</div>
+  </div>
+  <div class="ns">Plan</div>
+  <div class="ni on" onclick="nav('today',this)"><span>◈</span> Today</div>
+  <div class="ni" onclick="nav('log',this)"><span>▣</span> Log Time</div>
+  <div class="ns">Track</div>
+  <div class="ni" onclick="nav('week',this)"><span>◎</span> Week Progress</div>
+  <div class="ns">Setup</div>
+  <div class="ni" onclick="nav('targets',this)"><span>≡</span> Targets & Profile</div>
+
+  <div class="sb-ft">
+    <div class="week-box">
+      <div class="week-label">THIS WEEK</div>
+      <div id="sb-bars"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main">
+
+  <!-- TODAY -->
+  <div id="panel-today" class="panel on">
+    <div class="ph">
+      <div class="fb">
+        <div><div class="pt">Today's Allocation</div><div class="ps" id="tdate"></div></div>
+        <button class="btn bp" onclick="genPlan()" id="gbtn">⟳ Generate</button>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="stat-n" id="s-free">—</div><div class="stat-l">Free hours today</div></div>
+      <div class="stat"><div class="stat-n" id="s-behind">—</div><div class="stat-l">Tasks behind target</div></div>
+      <div class="stat"><div class="stat-n" id="s-logged">—</div><div class="stat-l">Hours logged this week</div></div>
+    </div>
+
+    <div class="card">
+      <div class="ct">How to spend your free time today</div>
+      <div class="ai-out ld" id="plan-out">Hit Generate to get today's time allocation based on your weekly targets and what's been logged so far.</div>
+    </div>
+
+    <div class="card">
+      <div class="ct">Suggested breakdown</div>
+      <div id="alloc-list"><div class="empty">Generate a plan to see your breakdown.</div></div>
+    </div>
+  </div>
+
+  <!-- LOG TIME -->
+  <div id="panel-log" class="panel">
+    <div class="ph">
+      <div class="pt">Log Time</div>
+      <div class="ps">Record what you actually did today — updates your weekly progress</div>
+    </div>
+    <div class="card">
+      <div class="ct">Today's log — <span id="log-date"></span></div>
+      <div id="log-rows"></div>
+      <div class="mt10">
+        <button class="btn bp" onclick="submitLog()">Save log</button>
+        <span style="font-size:12px;color:var(--tx3);margin-left:10px" id="log-msg"></span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ct">Log history (this week)</div>
+      <div id="log-history"></div>
+    </div>
+  </div>
+
+  <!-- WEEK PROGRESS -->
+  <div id="panel-week" class="panel">
+    <div class="ph">
+      <div class="pt">Week Progress</div>
+      <div class="ps" id="week-range"></div>
+    </div>
+    <div class="card">
+      <div class="ct">Weekly targets vs logged</div>
+      <div id="week-bars"></div>
+    </div>
+    <div class="card">
+      <div class="fb" style="margin-bottom:0">
+        <div class="ct" style="margin-bottom:0">Remaining to hit targets</div>
+        <button class="btn bg" style="font-size:11px;padding:4px 9px" onclick="resetWeek()">Reset week</button>
+      </div>
+      <div class="divider"></div>
+      <div id="week-remaining"></div>
+    </div>
+  </div>
+
+  <!-- TARGETS & PROFILE -->
+  <div id="panel-targets" class="panel">
+    <div class="ph">
+      <div class="pt">Targets & Profile</div>
+      <div class="ps">The AI reads this every time it builds your plan</div>
+    </div>
+
+    <div class="card">
+      <div class="ct">Weekly time targets (hours)</div>
+      <div id="target-inputs"></div>
+    </div>
+
+    <div class="card">
+      <div class="ct">Your schedule (so AI knows your free time)</div>
+      <div style="font-size:12px;color:var(--tx2);line-height:2;background:var(--bg3);border-radius:7px;padding:12px 14px;">
+        <div><span style="font-family:var(--mono);color:var(--bl);font-size:11px">Mon / Fri</span> — Work 6am–2pm · Free from ~2:30pm</div>
+        <div><span style="font-family:var(--mono);color:var(--bl);font-size:11px">Tue / Wed / Thu</span> — Work 12pm–8pm · Free until ~11:30am (gym Tue/Wed before)</div>
+        <div><span style="font-family:var(--mono);color:var(--gr);font-size:11px">Sat / Sun</span> — Free (gym + Kroger/meal prep Sun)</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ct">About you / context</div>
+      <div class="fg mb0">
+        <label class="fl">Background — the AI uses this to give relevant advice</label>
+        <textarea class="ft" id="p-ctx" rows="4"></textarea>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ct">Current focus / notes for the AI</div>
+      <div class="fg mb0">
+        <label class="fl">Anything the AI should weigh heavily right now (e.g. exam in 3 weeks)</label>
+        <textarea class="ft" id="p-focus" rows="3"></textarea>
+      </div>
+    </div>
+
+    <button class="btn bp" onclick="saveTargets()">Save</button>
+    <span style="font-size:12px;color:var(--tx3);margin-left:10px" id="t-msg"></span>
+  </div>
+
+</div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+// ─── Data model ───────────────────────────────────────────────────────────────
+// Subtasks with weekly targets (hours). Stretching is daily/fixed.
+const DEFAULT_TASKS = [
+  {id:'net',  label:'Network+ studying', target:5.5, color:'#60a5fa'},
+  {id:'soc',  label:'LetsDefend / SOC',  target:2,   color:'#4ade80'},
+  {id:'li',   label:'LinkedIn & AI project', target:2, color:'#fbbf24'},
+  {id:'gtr',  label:'Guitar',            target:2,   color:'#c084fc'},
+  {id:'read', label:'Reading',           target:1.5, color:'#f87171'},
+  {id:'proj', label:'Other projects',    target:1.5, color:'#4ade80'},
+  {id:'str',  label:'Stretching',        target:1.75,color:'#c084fc'}, // 15min x 7 days
+];
+
+// Free hours available per day (after work + fixed commitments)
+const FREE_HOURS = {
+  0: 6,   // Sun: gym + Kroger + meal prep eat into it
+  1: 7,   // Mon: free after 2:30pm
+  2: 4.5, // Tue: free 7-11:30am (gym 10:30-11:30)
+  3: 4,   // Wed: free 7-11:30am (gym), meal prep eve
+  4: 5.5, // Thu: free 7am-noon
+  5: 7,   // Fri: free after 2:30pm
+  6: 8,   // Sat: mostly free
+};
+
+let S = {
+  tasks: DEFAULT_TASKS.map(t => ({...t})), // clone so targets are editable
+  wlog: {},      // {date: {taskId: hours}} — keyed by ISO date string
+  wstart: '',    // ISO date of Monday this week
+  profile: {
+    ctx: 'Cybersecurity student graduating winter 2027. Working split shifts (Mon/Fri 6am-2pm, Tue/Wed/Thu 12pm-8pm). Gym Tue/Wed pre-work and Sat/Sun. Meal prep Sunday 12pm and Wednesday before bed.',
+    focus: 'Network+ exam (N10-009) is #1 priority this month. Aiming for 5-6 hours/week of focused study. Also building toward SOC Analyst role post-grad, then Digital Forensics (Kroll/FTI Consulting target).'
+  }
+};
+
+// ─── Persistence ──────────────────────────────────────────────────────────────
+async function persist() {
+  try { await window.storage.set('los4', JSON.stringify(S)); } catch(e) {}
+}
+async function hydrate() {
+  try {
+    const r = await window.storage.get('los4');
+    if (r?.value) {
+      const d = JSON.parse(r.value);
+      // Merge carefully — keep DEFAULT_TASKS structure, override targets + profile
+      if (d.tasks) S.tasks = d.tasks;
+      if (d.wlog) S.wlog = d.wlog;
+      if (d.wstart) S.wstart = d.wstart;
+      if (d.profile) S.profile = {...S.profile, ...d.profile};
+    }
+  } catch(e) {}
+}
+
+// ─── Week helpers ─────────────────────────────────────────────────────────────
+function getMondayISO() {
+  const d = new Date(), day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  return new Date(d.getFullYear(), d.getMonth(), diff).toISOString().slice(0,10);
+}
+function checkWeekReset() {
+  const mon = getMondayISO();
+  if (S.wstart !== mon) { S.wstart = mon; S.wlog = {}; persist(); }
+}
+function getWeekRange() {
+  const mon = new Date(S.wstart);
+  const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+  const fmt = d => d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  return `${fmt(mon)} – ${fmt(sun)}`;
+}
+
+// Total logged this week for a task
+function weekLogged(taskId) {
+  return Object.values(S.wlog).reduce((sum, dayLog) => sum + (dayLog[taskId] || 0), 0);
+}
+function totalWeekLogged() {
+  return S.tasks.reduce((sum, t) => sum + weekLogged(t.id), 0);
+}
+function behindCount() {
+  // How many tasks have logged < 50% of target with 4+ days left
+  const today = new Date().getDay(); // 0=sun
+  const daysLeft = today === 0 ? 1 : 7 - today + 1;
+  if (daysLeft < 4) return 0; // not meaningful to flag early
+  return S.tasks.filter(t => weekLogged(t.id) / t.target < 0.5).length;
+}
+
+// Today's ISO date
+function todayISO() { return new Date().toISOString().slice(0,10); }
+function todayDayNum() { return new Date().getDay(); }
+function todayLabel() {
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const d = new Date();
+  return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`;
+}
+
+// ─── Nav ──────────────────────────────────────────────────────────────────────
+function nav(id, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
+  document.querySelectorAll('.ni').forEach(n => n.classList.remove('on'));
+  document.getElementById('panel-' + id).classList.add('on');
+  if (el) el.classList.add('on');
+  if (id === 'today') refreshToday();
+  if (id === 'log') refreshLog();
+  if (id === 'week') refreshWeek();
+  if (id === 'targets') refreshTargets();
+  refreshSidebar();
+}
+
+// ─── Today panel ──────────────────────────────────────────────────────────────
+function refreshToday() {
+  const dn = todayDayNum();
+  document.getElementById('tdate').textContent = todayLabel();
+  document.getElementById('s-free').textContent = FREE_HOURS[dn] + 'h';
+  document.getElementById('s-behind').textContent = behindCount();
+  document.getElementById('s-logged').textContent = totalWeekLogged().toFixed(1) + 'h';
+}
+
+// Build a plain-text allocation without calling the AI — for the visual breakdown
+function buildLocalAlloc() {
+  const dn = todayDayNum();
+  const freeH = FREE_HOURS[dn];
+  const daysLeft = dn === 0 ? 1 : 7 - dn + 1; // days remaining incl today
+
+  // Calculate remaining needed per task
+  let items = S.tasks.map(t => {
+    const done = weekLogged(t.id);
+    const rem = Math.max(0, t.target - done);
+    // Spread remaining evenly over days left, capped per session reasonably
+    const ideal = rem / daysLeft;
+    return { ...t, done, rem, ideal };
+  });
+
+  // Normalize to fit available free hours (if total ideal > free hours, scale down)
+  const totalIdeal = items.reduce((s, i) => s + i.ideal, 0);
+  const scale = totalIdeal > freeH ? freeH / totalIdeal : 1;
+  items = items.map(i => ({ ...i, alloc: Math.round(i.ideal * scale * 4) / 4 })); // round to 0.25h
+  // Filter out 0-alloc (already done for week)
+  return items.filter(i => i.alloc > 0 || i.rem === 0);
+}
+
+function renderAllocList(items) {
+  const el = document.getElementById('alloc-list');
+  if (!items || !items.length) { el.innerHTML = '<div class="empty">Nothing to allocate today — you\'re on track!</div>'; return; }
+  el.innerHTML = items.map(i => {
+    const pct = Math.min(100, Math.round((i.done / i.target) * 100));
+    const barColor = pct >= 100 ? '#4ade80' : pct >= 60 ? '#fbbf24' : i.color;
+    const allocLabel = i.alloc >= 1 ? i.alloc + 'h' : (i.alloc * 60) + 'm';
+    return `<div class="alloc-row">
+      <div class="alloc-dot" style="background:${i.color}"></div>
+      <div class="alloc-name">${i.label}</div>
+      <div class="alloc-bar-wrap"><div class="alloc-bar" style="width:${pct}%;background:${barColor}"></div></div>
+      <div class="alloc-time">${allocLabel}</div>
+    </div>`;
+  }).join('');
+}
+
+async function genPlan() {
+  const btn = document.getElementById('gbtn');
+  const out = document.getElementById('plan-out');
+  btn.disabled = true; btn.textContent = '⟳ Thinking...';
+  out.className = 'ai-out ld'; out.textContent = 'Building your allocation...';
+
+  const dn = todayDayNum();
+  const freeH = FREE_HOURS[dn];
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const daysLeft = dn === 0 ? 1 : 7 - dn + 1;
+
+  // Build compact context — minimal tokens
+  const taskStatus = S.tasks.map(t => {
+    const done = weekLogged(t.id);
+    const rem = Math.max(0, t.target - done);
+    return `${t.label}: target ${t.target}h/wk, done ${done.toFixed(2)}h, remaining ${rem.toFixed(2)}h`;
+  }).join('\n');
+
+  const prompt = `You are a weekly time budget manager for Tom, a cybersecurity student.
+
+TODAY: ${days[dn]} — ${freeH} hours of free time available
+DAYS LEFT IN WEEK (including today): ${daysLeft}
+CURRENT FOCUS: ${S.profile.focus}
+
+WEEKLY TASK STATUS:
+${taskStatus}
+
+RULES:
+- Stretching is 15 min/day, always include it
+- Network+ is top priority — front-load if behind
+- Don't schedule more than the free hours available
+- If a task is already at target, say so and skip it
+- Be brief and direct — just tell Tom how to split his ${freeH}h today
+
+Respond with:
+1. A short sentence about the day (1 line max)
+2. A clean list: "[Task] — [time]" for each task to work on today
+3. One sentence of encouragement or tactical advice (1 line max)
+
+No headers, no padding. Under 120 words total.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001', // Haiku: fast + cheap for this simple task
+        max_tokens: 250,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.find(b => b.type === 'text')?.text || 'Could not generate.';
+    out.className = 'ai-out'; out.textContent = text;
+  } catch(e) {
+    out.className = 'ai-out ld'; out.textContent = 'Error — check connection.';
+  }
+
+  // Always render the local breakdown regardless
+  const items = buildLocalAlloc();
+  renderAllocList(items);
+
+  btn.disabled = false; btn.textContent = '⟳ Generate';
+}
+
+// ─── Log panel ────────────────────────────────────────────────────────────────
+function refreshLog() {
+  const iso = todayISO();
+  document.getElementById('log-date').textContent = todayLabel();
+  const today = S.wlog[iso] || {};
+
+  document.getElementById('log-rows').innerHTML = S.tasks.map(t => {
+    const logged = today[t.id] || 0;
+    return `<div class="log-row">
+      <div class="log-name">${t.label}</div>
+      <div class="log-done">${logged > 0 ? logged + 'h logged' : ''}</div>
+      <input class="log-input" type="number" min="0" max="12" step="0.25" placeholder="0" id="li-${t.id}" value="${logged || ''}">
+      <span class="log-unit">hrs</span>
+    </div>`;
+  }).join('');
+
+  renderHistory();
+}
+
+function submitLog() {
+  const iso = todayISO();
+  const dayLog = {};
+  S.tasks.forEach(t => {
+    const val = parseFloat(document.getElementById('li-' + t.id)?.value) || 0;
+    if (val > 0) dayLog[t.id] = val;
+  });
+  S.wlog[iso] = dayLog;
+  persist();
+  refreshLog();
+  refreshSidebar();
+  const m = document.getElementById('log-msg');
+  m.textContent = 'Saved.'; setTimeout(() => m.textContent = '', 2000);
+}
+
+function renderHistory() {
+  const el = document.getElementById('log-history');
+  const entries = Object.entries(S.wlog).sort((a,b) => b[0].localeCompare(a[0]));
+  if (!entries.length) { el.innerHTML = '<div class="empty">No logs this week yet.</div>'; return; }
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  el.innerHTML = entries.map(([date, log]) => {
+    const d = new Date(date + 'T12:00:00');
+    const total = Object.values(log).reduce((s,v) => s+v, 0);
+    const items = Object.entries(log).map(([id, h]) => {
+      const t = S.tasks.find(t => t.id === id);
+      return `<span style="font-size:11px;color:var(--tx2)">${t?.label||id}: ${h}h</span>`;
+    }).join(' · ');
+    return `<div style="padding:8px 0;border-bottom:0.5px solid var(--bd);font-size:12px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+        <span style="font-family:var(--mono);color:var(--tx2)">${days[d.getDay()]} ${date.slice(5)}</span>
+        <span style="font-family:var(--mono);color:var(--tx3)">${total.toFixed(2)}h total</span>
+      </div>
+      <div style="line-height:1.8">${items}</div>
+    </div>`;
+  }).join('');
+}
+
+// ─── Week panel ───────────────────────────────────────────────────────────────
+function refreshWeek() {
+  document.getElementById('week-range').textContent = getWeekRange();
+
+  document.getElementById('week-bars').innerHTML = S.tasks.map(t => {
+    const done = weekLogged(t.id);
+    const pct = Math.min(100, Math.round(done / t.target * 100));
+    const barColor = pct >= 100 ? '#4ade80' : pct >= 60 ? '#fbbf24' : t.color;
+    return `<div class="wk-row">
+      <div class="wk-name">${t.label}</div>
+      <div class="wk-bar-wrap"><div class="wk-bar" style="width:${pct}%;background:${barColor}"></div></div>
+      <div class="wk-val">${done.toFixed(2)}h / ${t.target}h</div>
+      <div class="wk-pct">${pct}%</div>
+    </div>`;
+  }).join('');
+
+  const rem = S.tasks.map(t => {
+    const r = Math.max(0, t.target - weekLogged(t.id));
+    if (r <= 0) return `<div style="display:flex;gap:8px;padding:6px 0;font-size:13px;border-bottom:0.5px solid var(--bd)"><div style="flex:1;color:var(--tx3)">${t.label}</div><span class="tag tg">done</span></div>`;
+    return `<div style="display:flex;gap:8px;align-items:center;padding:6px 0;font-size:13px;border-bottom:0.5px solid var(--bd)"><div style="flex:1">${t.label}</div><span style="font-family:var(--mono);font-size:12px;color:var(--tx2)">${r.toFixed(2)}h left</span></div>`;
+  }).join('');
+  document.getElementById('week-remaining').innerHTML = rem;
+}
+
+function resetWeek() {
+  if (!confirm('Reset all logged time for this week?')) return;
+  S.wlog = {}; persist(); refreshWeek(); refreshSidebar();
+}
+
+// ─── Targets & Profile ────────────────────────────────────────────────────────
+function refreshTargets() {
+  document.getElementById('target-inputs').innerHTML = S.tasks.map(t =>
+    `<div class="log-row">
+      <div class="log-name">${t.label}</div>
+      <input class="log-input" type="number" min="0" max="40" step="0.25" id="tgt-${t.id}" value="${t.target}">
+      <span class="log-unit">hrs/wk</span>
+    </div>`
+  ).join('');
+  document.getElementById('p-ctx').value = S.profile.ctx || '';
+  document.getElementById('p-focus').value = S.profile.focus || '';
+}
+
+function saveTargets() {
+  S.tasks.forEach(t => {
+    const val = parseFloat(document.getElementById('tgt-' + t.id)?.value);
+    if (!isNaN(val)) t.target = val;
+  });
+  S.profile.ctx = document.getElementById('p-ctx').value;
+  S.profile.focus = document.getElementById('p-focus').value;
+  persist();
+  const m = document.getElementById('t-msg');
+  m.textContent = 'Saved.'; setTimeout(() => m.textContent = '', 2000);
+}
+
+// ─── Sidebar mini bars ────────────────────────────────────────────────────────
+function refreshSidebar() {
+  document.getElementById('sb-bars').innerHTML = S.tasks.map(t => {
+    const pct = Math.min(100, Math.round(weekLogged(t.id) / t.target * 100));
+    const c = pct >= 100 ? '#4ade80' : pct >= 60 ? '#fbbf24' : t.color;
+    return `<div class="week-bar-row">
+      <div class="week-bar-label">${t.label.split(' ')[0]}</div>
+      <div class="week-mini-bar"><div class="week-mini-fill" style="width:${pct}%;background:${c}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+async function init() {
+  await hydrate();
+  checkWeekReset();
+  refreshToday();
+  refreshSidebar();
+}
+init();
+</script>
+</body>
+</html>
