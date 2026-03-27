@@ -478,7 +478,7 @@ Under 100 words total.`;
       })
     });
     const data = await res.json();
-    const text = data.content?.find(b => b.type === 'text')?.text || 'Could not generate.';
+    const text = data.content?.find(b => b.type === 'text')?.text || data.content?.[0]?.text || (typeof data.content === 'string' ? data.content : null) || data.error?.message || 'Could not generate.';
     out.className = 'ai-out'; out.textContent = text;
     const items = buildLocalAlloc();
     localStorage.setItem('los-plan', JSON.stringify({ date: todayISO(), text, items }));
