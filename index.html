@@ -383,21 +383,29 @@ function buildLocalAlloc() {
   const freeH = FREE_HOURS[dn];
   const daysLeft = dn === 0 ? 1 : 7 - dn + 1; // days remaining incl today
 
-  // Calculate remaining needed per task
+  // Hard cap: never recommend more than 65% of free hours as structured tasks.
+  // The rest is breathing room, meals, transitions, just living.
+  const usableH = freeH * 0.65;
+
+  // Calculate a realistic single-day portion per task.
+  // Even if behind, cap each task's catchup at 1.5x its daily average — 
+  // you can't undo a full week in one day.
+  const dailyAvg = t => t.target / 7;
   let items = S.tasks.map(t => {
     const done = weekLogged(t.id);
     const rem = Math.max(0, t.target - done);
-    // Spread remaining evenly over days left, capped per session reasonably
-    const ideal = rem / daysLeft;
+    // Ideal = spread remaining over days left, but cap at 1.5x daily average
+    const ideal = Math.min(rem / daysLeft, dailyAvg(t) * 1.5);
     return { ...t, done, rem, ideal };
   });
 
-  // Normalize to fit available free hours (if total ideal > free hours, scale down)
+  // If total still exceeds usable hours, scale everything down proportionally
   const totalIdeal = items.reduce((s, i) => s + i.ideal, 0);
-  const scale = totalIdeal > freeH ? freeH / totalIdeal : 1;
-  items = items.map(i => ({ ...i, alloc: Math.round(i.ideal * scale * 4) / 4 })); // round to 0.25h
-  // Filter out 0-alloc (already done for week)
-  return items.filter(i => i.alloc > 0 || i.rem === 0);
+  const scale = totalIdeal > usableH ? usableH / totalIdeal : 1;
+  items = items.map(i => ({ ...i, alloc: Math.round(i.ideal * scale * 4) / 4 }));
+
+  // Filter: skip tasks with 0 alloc AND already at or past target
+  return items.filter(i => i.alloc > 0);
 }
 
 function renderAllocList(items) {
@@ -434,9 +442,10 @@ async function genPlan() {
     return `${t.label}: target ${t.target}h/wk, done ${done.toFixed(2)}h, remaining ${rem.toFixed(2)}h`;
   }).join('\n');
 
+  const usableH = (freeH * 0.65).toFixed(1);
   const prompt = `You are a weekly time budget manager for Tom, a cybersecurity student.
 
-TODAY: ${days[dn]} — ${freeH} hours of free time available
+TODAY: ${days[dn]} — ${freeH}h free, use max ${usableH}h for structured tasks (rest is life)
 DAYS LEFT IN WEEK (including today): ${daysLeft}
 CURRENT FOCUS: ${S.profile.focus}
 
@@ -444,18 +453,19 @@ WEEKLY TASK STATUS:
 ${taskStatus}
 
 RULES:
+- Total recommendations must NOT exceed ${usableH}h — this is a hard cap
+- If it's late in the week and tasks are behind, acknowledge it briefly; don't try to catch everything up in one day
 - Stretching is 15 min/day, always include it
-- Network+ is top priority — front-load if behind
-- Don't schedule more than the free hours available
-- If a task is already at target, say so and skip it
-- Be brief and direct — just tell Tom how to split his ${freeH}h today
+- Network+ is top priority
+- Skip tasks already at target
+- Be brief: one line per task, no padding
 
 Respond with:
-1. A short sentence about the day (1 line max)
-2. A clean list: "[Task] — [time]" for each task to work on today
-3. One sentence of encouragement or tactical advice (1 line max)
+1. One sentence framing the day (e.g. "Friday — lighter load, focus on X")
+2. List: "[Task] — [time]" (times must sum to ${usableH}h or less)
+3. One tactical note if useful
 
-No headers, no padding. Under 120 words total.`;
+Under 100 words total.`;
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
