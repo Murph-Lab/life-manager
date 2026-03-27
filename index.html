@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -472,7 +473,7 @@ Under 100 words total.`;
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001', // Haiku: fast + cheap for this simple task
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 250,
         messages: [{ role: 'user', content: prompt }]
       })
@@ -480,15 +481,24 @@ Under 100 words total.`;
     const data = await res.json();
     const text = data.content?.find(b => b.type === 'text')?.text || 'Could not generate.';
     out.className = 'ai-out'; out.textContent = text;
+    const items = buildLocalAlloc();
+    localStorage.setItem('los-plan', JSON.stringify({ date: todayISO(), text, items }));
+    renderAllocList(items);
   } catch(e) {
     out.className = 'ai-out ld'; out.textContent = 'Error — check connection.';
   }
 
-  // Always render the local breakdown regardless
-  const items = buildLocalAlloc();
-  renderAllocList(items);
-
   btn.disabled = false; btn.textContent = '⟳ Generate';
+}
+
+function restorePlan() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('los-plan') || 'null');
+    if (!saved || saved.date !== todayISO()) return;
+    const out = document.getElementById('plan-out');
+    out.className = 'ai-out'; out.textContent = saved.text;
+    renderAllocList(saved.items);
+  } catch(e) {}
 }
 
 // ─── Log panel ────────────────────────────────────────────────────────────────
@@ -619,6 +629,7 @@ async function init() {
   checkWeekReset();
   refreshToday();
   refreshSidebar();
+  restorePlan();
 }
 init();
 </script>
