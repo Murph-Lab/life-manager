@@ -442,30 +442,36 @@ async function genPlan() {
     return `${t.label}: target ${t.target}h/wk, done ${done.toFixed(2)}h, remaining ${rem.toFixed(2)}h`;
   }).join('\n');
 
+  // Build local alloc first so AI uses the exact same numbers
+  const allocItems = buildLocalAlloc();
+  const allocLines = allocItems.map(i => {
+    const t = i.alloc >= 1 ? i.alloc + 'h' : (i.alloc * 60) + 'm';
+    return `${i.label} — ${t}`;
+  }).join('\n');
+
   const usableH = (freeH * 0.65).toFixed(1);
   const prompt = `You are a weekly time budget manager for Tom, a cybersecurity student.
 
-TODAY: ${days[dn]} — ${freeH}h free, use max ${usableH}h for structured tasks (rest is life)
+TODAY: ${days[dn]} — ${freeH}h free
 DAYS LEFT IN WEEK (including today): ${daysLeft}
 CURRENT FOCUS: ${S.profile.focus}
 
 WEEKLY TASK STATUS:
 ${taskStatus}
 
+TODAY'S ALLOCATION (already calculated — use these exact times, do not change them):
+${allocLines}
+
 RULES:
-- Total recommendations must NOT exceed ${usableH}h — this is a hard cap
-- If it's late in the week and tasks are behind, acknowledge it briefly; don't try to catch everything up in one day
-- Stretching is 15 min/day, always include it
-- Network+ is top priority
-- Skip tasks already at target
-- Be brief: one line per task, no padding
+- Use the exact times above, do not invent different numbers
+- No markdown — no asterisks, no bold, no bullet symbols, plain text only
+- One sentence max for intro, one sentence max for closing note
+- Under 80 words total
 
-Respond with:
-1. One sentence framing the day (e.g. "Friday — lighter load, focus on X")
-2. List: "[Task] — [time]" (times must sum to ${usableH}h or less)
-3. One tactical note if useful
-
-Under 100 words total.`;
+FORMAT:
+[One sentence about the day]
+[paste the allocation list exactly as given]
+[One short tactical tip]`;
 
   try {
     const res = await fetch('https://spring-cake-c64a.tomemurphy20.workers.dev', {
@@ -478,13 +484,17 @@ Under 100 words total.`;
       })
     });
     const data = await res.json();
-    const text = data.content?.find(b => b.type === 'text')?.text || data.content?.[0]?.text || (typeof data.content === 'string' ? data.content : null) || data.error?.message || 'Could not generate.';
+    const text = data.content?.find(b => b.type === 'text')?.text
+      || data.content?.[0]?.text
+      || (typeof data.content === 'string' ? data.content : null)
+      || data.error?.message
+      || 'Could not generate.';
     out.className = 'ai-out'; out.textContent = text;
-    const items = buildLocalAlloc();
-    localStorage.setItem('los-plan', JSON.stringify({ date: todayISO(), text, items }));
-    renderAllocList(items);
+    localStorage.setItem('los-plan', JSON.stringify({ date: todayISO(), text, items: allocItems }));
+    renderAllocList(allocItems);
   } catch(e) {
     out.className = 'ai-out ld'; out.textContent = 'Error — check connection.';
+    renderAllocList(allocItems);
   }
 
   btn.disabled = false; btn.textContent = '⟳ Generate';
