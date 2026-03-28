@@ -297,14 +297,13 @@ let S = {
 
 // ─── Persistence ──────────────────────────────────────────────────────────────
 async function persist() {
-  try { await window.storage.set('los4', JSON.stringify(S)); } catch(e) {}
+  try { localStorage.setItem('los4', JSON.stringify(S)); } catch(e) {}
 }
 async function hydrate() {
   try {
-    const r = await window.storage.get('los4');
-    if (r?.value) {
-      const d = JSON.parse(r.value);
-      // Merge carefully — keep DEFAULT_TASKS structure, override targets + profile
+    const r = localStorage.getItem('los4');
+    if (r) {
+      const d = JSON.parse(r);
       if (d.tasks) S.tasks = d.tasks;
       if (d.wlog) S.wlog = d.wlog;
       if (d.wstart) S.wstart = d.wstart;
